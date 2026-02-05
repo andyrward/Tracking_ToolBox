@@ -178,8 +178,11 @@ class BaseLocator(ABC):
         cy = np.sum(y_coords * window_shifted) / total
         
         # Convert from window coordinates to frame coordinates
-        x_refined = guess_x - self.half_window + cx
-        y_refined = guess_y - self.half_window + cy
+        # Window is centered at integer pixel position
+        ix = int(round(guess_x))
+        iy = int(round(guess_y))
+        x_refined = ix + (cx - self.half_window)
+        y_refined = iy + (cy - self.half_window)
         
         mass = np.sum(window)
         signal = np.max(window) - np.min(window)
