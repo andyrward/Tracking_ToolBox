@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
 
-def plot_trajectory_comparison(error_df, show=True, save_path=None):
+def plot_trajectory_comparison(error_df, show=True, save_path=None, method_name=None):
     """Plot ground truth vs measured trajectory.
     
     Parameters
@@ -16,6 +16,8 @@ def plot_trajectory_comparison(error_df, show=True, save_path=None):
         Whether to display the plot interactively. Default is True.
     save_path : str, optional
         Path to save the plot. If None, plot is not saved.
+    method_name : str, optional
+        Name of the tracking method to display in the title.
     """
     fig, ax = plt.subplots(figsize=(10, 8))
     
@@ -29,7 +31,10 @@ def plot_trajectory_comparison(error_df, show=True, save_path=None):
     
     ax.set_xlabel('X Position (pixels)')
     ax.set_ylabel('Y Position (pixels)')
-    ax.set_title('Trajectory Comparison')
+    title = 'Trajectory Comparison'
+    if method_name:
+        title = f'Trajectory Comparison - {method_name}'
+    ax.set_title(title)
     ax.legend()
     ax.grid(True, alpha=0.3)
     ax.set_aspect('equal')
@@ -45,7 +50,7 @@ def plot_trajectory_comparison(error_df, show=True, save_path=None):
         plt.close()
 
 
-def plot_error_over_time(error_df, show=True, save_path=None):
+def plot_error_over_time(error_df, show=True, save_path=None, method_name=None):
     """Plot error evolution across frames.
     
     Parameters
@@ -56,6 +61,8 @@ def plot_error_over_time(error_df, show=True, save_path=None):
         Whether to display the plot interactively. Default is True.
     save_path : str, optional
         Path to save the plot. If None, plot is not saved.
+    method_name : str, optional
+        Name of the tracking method to display in the title.
     """
     fig, axes = plt.subplots(3, 1, figsize=(10, 9))
     
@@ -63,7 +70,10 @@ def plot_error_over_time(error_df, show=True, save_path=None):
     axes[0].plot(error_df['frame'], error_df['error_x'], 'b-', alpha=0.7)
     axes[0].axhline(0, color='k', linestyle='--', alpha=0.3)
     axes[0].set_ylabel('X Error (pixels)')
-    axes[0].set_title('Position Error Over Time')
+    title = 'Position Error Over Time'
+    if method_name:
+        title = f'Position Error Over Time - {method_name}'
+    axes[0].set_title(title)
     axes[0].grid(True, alpha=0.3)
     
     # Y error
@@ -89,7 +99,7 @@ def plot_error_over_time(error_df, show=True, save_path=None):
         plt.close()
 
 
-def plot_pixel_bias(bias_data, show=True, save_path=None):
+def plot_pixel_bias(bias_data, show=True, save_path=None, method_name=None):
     """Plot TrackPy-style pixel bias plots.
     
     Creates 4 subplots showing:
@@ -107,8 +117,14 @@ def plot_pixel_bias(bias_data, show=True, save_path=None):
         Whether to display the plot interactively. Default is True.
     save_path : str, optional
         Path to save the plot. If None, plot is not saved.
+    method_name : str, optional
+        Name of the tracking method to display in the title.
     """
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+    # Add overall title if method name provided
+    if method_name:
+        fig.suptitle(f'Pixel Bias Analysis - {method_name}', fontsize=14, fontweight='bold')
     
     # X bias
     axes[0, 0].plot(bias_data['x_bins'], bias_data['bias_x'], 'b-o', markersize=6)
