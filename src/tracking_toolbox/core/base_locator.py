@@ -166,7 +166,7 @@ class BaseLocator(ABC):
         window_shifted = window - np.min(window)
         
         total = np.sum(window_shifted)
-        if total == 0:
+        if total <= 0:
             return {
                 'x': guess_x, 'y': guess_y, 'mass': 0,
                 'signal': 0, 'size': 0, 'failed': True

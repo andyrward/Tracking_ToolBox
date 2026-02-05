@@ -3,6 +3,9 @@
 import numpy as np
 from ..core.base_locator import BaseLocator
 
+# Constants
+MIN_PARABOLA_CURVATURE = 1e-10  # Minimum curvature to consider parabola valid
+
 
 class Parabola2DLocator(BaseLocator):
     """Localize particles by fitting 2D parabola to peak.
@@ -65,7 +68,7 @@ class Parabola2DLocator(BaseLocator):
         b = (v2 - v0) / 2.0
         
         # Peak at x = -b/(2a)
-        if abs(a) < 1e-10:
+        if abs(a) < MIN_PARABOLA_CURVATURE:
             # Nearly flat, no refinement
             return 0.0
             

@@ -3,6 +3,7 @@
 import os
 import sys
 import numpy as np
+import argparse
 
 # Add src to path to allow imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -38,6 +39,17 @@ from analysis.visualization import (
 
 def main():
     """Run tracking accuracy tests."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Run tracking accuracy tests')
+    parser.add_argument('--no-display', action='store_true',
+                       help='Disable interactive plot display (useful for CI/CD)')
+    parser.add_argument('--output-dir', default='test_results',
+                       help='Directory to save output plots (default: test_results)')
+    args = parser.parse_args()
+    
+    show_plots = not args.no_display
+    output_dir = args.output_dir
+    
     print("="*70)
     print("Tracking Toolbox - Accuracy Test")
     print("="*70)
@@ -80,9 +92,9 @@ def main():
     print(f"  Ground truth trajectory: {len(ground_truth)} positions")
     
     # Create output directory
-    output_dir = 'test_results'
     os.makedirs(output_dir, exist_ok=True)
     print(f"\nOutput directory: {output_dir}/")
+    print(f"Display plots: {show_plots}")
     
     # Initial coordinates (use ground truth from first frame)
     initial_coords = [(ground_truth.loc[0, 'x'], ground_truth.loc[0, 'y'])]
@@ -118,18 +130,18 @@ def main():
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_trajectory.png')
     )
     plot_error_over_time(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_pixel_bias.png')
     )
     
@@ -160,18 +172,18 @@ def main():
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_trajectory.png')
     )
     plot_error_over_time(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_pixel_bias.png')
     )
     
@@ -206,18 +218,18 @@ def main():
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_trajectory.png')
     )
     plot_error_over_time(
         error_df,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_pixel_bias.png')
     )
     
@@ -230,7 +242,7 @@ def main():
     
     plot_method_comparison(
         all_stats,
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'method_comparison.png')
     )
     
@@ -240,7 +252,7 @@ def main():
         all_results['Gaussian2D'],
         ground_truth=ground_truth,
         frame_indices=[0, 50, 100, 150, 199],
-        show=True,
+        show=show_plots,
         save_path=os.path.join(output_dir, 'sample_frames.png')
     )
     

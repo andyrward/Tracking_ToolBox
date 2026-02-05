@@ -115,19 +115,19 @@ def generate_frame_sequence(trajectories, image_shape, amplitude, sigma,
         for particle_idx, trajectory in enumerate(trajectories):
             x, y = trajectory[frame_idx]
             
-            # Generate particle spot
+            # Generate particle spot (no background, as frame already has it)
             spot = generate_spot_with_noise(
                 image_shape,
                 x, y,
                 amplitude[particle_idx],
                 sigma[particle_idx],
-                0,  # No background in spot (already in frame)
+                0,  # No background in spot (frame already has background)
                 poisson_noise=False,  # Add noise later to combined frame
                 gaussian_noise_sigma=None
             )
             
-            # Add spot to frame (additive)
-            frame += (spot - 0)  # Subtract background from spot since frame has it
+            # Add spot to frame (spot already has zero background)
+            frame += spot
             
             # Record ground truth
             ground_truth.append({

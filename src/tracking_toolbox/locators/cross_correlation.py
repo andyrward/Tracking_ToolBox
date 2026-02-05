@@ -4,6 +4,9 @@ import numpy as np
 from scipy.signal import correlate2d
 from ..core.base_locator import BaseLocator
 
+# Constants
+MIN_STD_THRESHOLD = 1e-10  # Minimum standard deviation for normalization
+
 
 class CrossCorrelationLocator(BaseLocator):
     """Localize particles using cross-correlation with a template.
@@ -63,7 +66,7 @@ class CrossCorrelationLocator(BaseLocator):
         """
         mean = np.mean(array)
         std = np.std(array)
-        if std < 1e-10:
+        if std < MIN_STD_THRESHOLD:
             return array - mean
         return (array - mean) / std
     
