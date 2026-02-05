@@ -4,9 +4,18 @@ import os
 import sys
 import numpy as np
 import argparse
+import pandas as pd
 
 # Add src to path to allow imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+# Try to import trackpy
+try:
+    import trackpy as tp
+    TRACKPY_AVAILABLE = True
+except ImportError:
+    TRACKPY_AVAILABLE = False
+    print("Warning: TrackPy not available. Will skip TrackPy comparison test.")
 
 from tracking_toolbox import (
     Gaussian2DLocator,
@@ -123,24 +132,27 @@ def main():
     stats = calculate_summary_statistics(error_df)
     print_summary_statistics(stats, "Gaussian 2D + Direct")
     
-    all_results['Gaussian2D'] = error_df
-    all_stats['Gaussian2D'] = stats
+    all_results['Gaussian2D + Direct'] = error_df
+    all_stats['Gaussian2D + Direct'] = stats
     
     # Generate plots
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
+        method_name='Gaussian2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_trajectory.png')
     )
     plot_error_over_time(
         error_df,
+        method_name='Gaussian2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
+        method_name='Gaussian2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'gaussian2d_pixel_bias.png')
     )
@@ -165,24 +177,27 @@ def main():
     stats = calculate_summary_statistics(error_df)
     print_summary_statistics(stats, "Parabola 2D + Direct")
     
-    all_results['Parabola2D'] = error_df
-    all_stats['Parabola2D'] = stats
+    all_results['Parabola2D + Direct'] = error_df
+    all_stats['Parabola2D + Direct'] = stats
     
     # Generate plots
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
+        method_name='Parabola2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_trajectory.png')
     )
     plot_error_over_time(
         error_df,
+        method_name='Parabola2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
+        method_name='Parabola2D + Direct',
         show=show_plots,
         save_path=os.path.join(output_dir, 'parabola2d_pixel_bias.png')
     )
@@ -211,27 +226,102 @@ def main():
     stats = calculate_summary_statistics(error_df)
     print_summary_statistics(stats, "Cross-Correlation + Max Intensity")
     
-    all_results['CrossCorrelation'] = error_df
-    all_stats['CrossCorrelation'] = stats
+    all_results['CrossCorrelation + MaxIntensity'] = error_df
+    all_stats['CrossCorrelation + MaxIntensity'] = stats
     
     # Generate plots
     print("Generating plots...")
     plot_trajectory_comparison(
         error_df,
+        method_name='CrossCorrelation + MaxIntensity',
         show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_trajectory.png')
     )
     plot_error_over_time(
         error_df,
+        method_name='CrossCorrelation + MaxIntensity',
         show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_error_time.png')
     )
     bias_data = calculate_pixel_bias(error_df)
     plot_pixel_bias(
         bias_data,
+        method_name='CrossCorrelation + MaxIntensity',
         show=show_plots,
         save_path=os.path.join(output_dir, 'crosscorr_pixel_bias.png')
     )
+    
+    # =========================================================================
+    # Test 4: TrackPy's locate function (baseline comparison)
+    # =========================================================================
+    if TRACKPY_AVAILABLE:
+        print("\n" + "="*70)
+        print("Test 4: TrackPy locate (Baseline)")
+        print("="*70)
+        
+        print("Running TrackPy locate on all frames...")
+        # TrackPy locate parameters:
+        # - diameter: Must be odd integer, size of region to characterize particle (11 matches window_size of other methods)
+        # - minmass: Minimum integrated brightness to accept as a feature (100 matches other methods)
+        diameter = 11
+        min_mass = 100
+        
+        # Run trackpy.batch on all frames
+        measured = tp.batch(frames, diameter=diameter, minmass=min_mass)
+        print(f"  Detected {len(measured)} positions across all frames")
+        
+        # Filter to only keep the main particle track
+        # (closest to ground truth in each frame)
+        filtered_measured = []
+        for frame_idx in range(num_frames):
+            frame_features = measured[measured['frame'] == frame_idx]
+            if len(frame_features) > 0:
+                gt = ground_truth[ground_truth['frame'] == frame_idx]
+                if len(gt) > 0:
+                    gt_x, gt_y = gt.iloc[0]['x'], gt.iloc[0]['y']
+                    # Find closest feature to ground truth
+                    distances = np.sqrt((frame_features['x'] - gt_x)**2 + 
+                                       (frame_features['y'] - gt_y)**2)
+                    closest_idx = distances.idxmin()
+                    filtered_measured.append(frame_features.loc[closest_idx])
+        
+        measured = pd.DataFrame(filtered_measured).reset_index(drop=True)
+        print(f"  Filtered to {len(measured)} positions (main particle)")
+        
+        # Calculate errors
+        error_df = calculate_position_error(measured, ground_truth)
+        stats = calculate_summary_statistics(error_df)
+        print_summary_statistics(stats, "TrackPy locate")
+        
+        all_results['TrackPy'] = error_df
+        all_stats['TrackPy'] = stats
+        
+        # Generate plots
+        print("Generating plots...")
+        plot_trajectory_comparison(
+            error_df,
+            method_name='TrackPy locate',
+            show=show_plots,
+            save_path=os.path.join(output_dir, 'trackpy_trajectory.png')
+        )
+        plot_error_over_time(
+            error_df,
+            method_name='TrackPy locate',
+            show=show_plots,
+            save_path=os.path.join(output_dir, 'trackpy_error_time.png')
+        )
+        bias_data = calculate_pixel_bias(error_df)
+        plot_pixel_bias(
+            bias_data,
+            method_name='TrackPy locate',
+            show=show_plots,
+            save_path=os.path.join(output_dir, 'trackpy_pixel_bias.png')
+        )
+    else:
+        print("\n" + "="*70)
+        print("Test 4: TrackPy locate (Baseline) - SKIPPED")
+        print("="*70)
+        print("  TrackPy not available. Install with: pip install trackpy")
     
     # =========================================================================
     # Comparison plots
@@ -249,7 +339,7 @@ def main():
     # Show sample frames
     show_sample_frames(
         frames,
-        all_results['Gaussian2D'],
+        all_results['Gaussian2D + Direct'],
         ground_truth=ground_truth,
         frame_indices=[0, 50, 100, 150, 199],
         show=show_plots,
