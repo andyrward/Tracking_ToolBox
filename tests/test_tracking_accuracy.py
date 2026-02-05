@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import argparse
+import pandas as pd
 
 # Add src to path to allow imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -259,19 +260,14 @@ def main():
         print("="*70)
         
         print("Running TrackPy locate on all frames...")
-        # TrackPy locate expects diameter parameter (odd integer)
-        # Use diameter = 11 to match window size of other methods
+        # TrackPy locate parameters:
+        # - diameter: Must be odd integer, size of region to characterize particle (11 matches window_size of other methods)
+        # - minmass: Minimum integrated brightness to accept as a feature (100 matches other methods)
         diameter = 11
+        min_mass = 100
         
-        # Run trackpy.locate on each frame
-        all_features = []
-        for frame_idx, frame in enumerate(frames):
-            features = tp.locate(frame, diameter=diameter, minmass=100)
-            features['frame'] = frame_idx
-            all_features.append(features)
-        
-        # Combine all frames
-        measured = tp.batch(frames, diameter=diameter, minmass=100)
+        # Run trackpy.batch on all frames
+        measured = tp.batch(frames, diameter=diameter, minmass=min_mass)
         print(f"  Detected {len(measured)} positions across all frames")
         
         # Filter to only keep the main particle track
@@ -289,7 +285,6 @@ def main():
                     closest_idx = distances.idxmin()
                     filtered_measured.append(frame_features.loc[closest_idx])
         
-        import pandas as pd
         measured = pd.DataFrame(filtered_measured).reset_index(drop=True)
         print(f"  Filtered to {len(measured)} positions (main particle)")
         
