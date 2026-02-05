@@ -159,8 +159,11 @@ class CrossCorrelationLocator(BaseLocator):
         peak_x, peak_y = self._find_subpixel_peak(correlation)
         
         # Convert from window coordinates to frame coordinates
-        x_refined = guess_x - self.half_window + peak_x
-        y_refined = guess_y - self.half_window + peak_y
+        # Window is centered at integer pixel position
+        ix = int(round(guess_x))
+        iy = int(round(guess_y))
+        x_refined = ix + (peak_x - self.half_window)
+        y_refined = iy + (peak_y - self.half_window)
         
         # Calculate mass and signal
         mass = np.sum(window)

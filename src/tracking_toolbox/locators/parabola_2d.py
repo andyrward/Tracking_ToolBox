@@ -127,8 +127,11 @@ class Parabola2DLocator(BaseLocator):
         y_refined_window = max_y + y_offset
         
         # Convert to frame coordinates
-        x_refined = guess_x - self.half_window + x_refined_window
-        y_refined = guess_y - self.half_window + y_refined_window
+        # Window is centered at integer pixel position
+        ix = int(round(guess_x))
+        iy = int(round(guess_y))
+        x_refined = ix + (x_refined_window - self.half_window)
+        y_refined = iy + (y_refined_window - self.half_window)
         
         # Calculate mass and signal
         mass = np.sum(window)
