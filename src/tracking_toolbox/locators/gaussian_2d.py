@@ -1,5 +1,6 @@
 """Gaussian 2D fitting localization algorithm."""
 
+import time
 import numpy as np
 from scipy.optimize import curve_fit
 from ..core.base_locator import BaseLocator
@@ -349,7 +350,8 @@ class Gaussian2DLocator(BaseLocator):
             result = self._refine_single_original(window, guess_x, guess_y)
             if not result.get('failed', False) and 'x' in result:
                 return result
-        except:
+        except (RuntimeError, ValueError, Exception) as e:
+            # Fit failed, continue to fallback
             pass
         
         # Strategy 3: Centroid fallback
@@ -368,13 +370,20 @@ class Gaussian2DLocator(BaseLocator):
         if not self.debug_mode:
             return None
         
-        import pandas as pd
+        try:
+            import pandas as pd
+            strategy_dist = pd.Series(self._debug_strategy_used).value_counts().to_dict() if self._debug_strategy_used else {}
+        except ImportError:
+            # Pandas not available, use basic dict counting
+            strategy_dist = {}
+            for strategy in self._debug_strategy_used:
+                strategy_dist[strategy] = strategy_dist.get(strategy, 0) + 1
         
         return {
             'mean_time': np.mean(self._debug_times) if self._debug_times else 0,
             'median_time': np.median(self._debug_times) if self._debug_times else 0,
             'failure_rate': len(self._debug_failures) / len(self._debug_times) if self._debug_times else 0,
-            'strategy_distribution': pd.Series(self._debug_strategy_used).value_counts().to_dict() if self._debug_strategy_used else {}
+            'strategy_distribution': strategy_dist
         }
     
     def _refine_single(self, window, guess_x, guess_y):
@@ -394,8 +403,6 @@ class Gaussian2DLocator(BaseLocator):
         dict
             Refinement result with keys: x, y, mass, signal, size.
         """
-        import time
-        
         if self.debug_mode:
             t0 = time.time()
         
